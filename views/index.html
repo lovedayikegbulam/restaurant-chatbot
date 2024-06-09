@@ -1,0 +1,39 @@
+<!-- views/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Restaurant Chatbot</title>
+</head>
+<body>
+  <div id="chatbox">
+    <p>Welcome to the Restaurant Chatbot!</p>
+    <p>Select an option:</p>
+    <p>1. Place an order</p>
+    <p>99. Checkout order</p>
+    <p>98. See order history</p>
+    <p>97. See current order</p>
+    <p>0. Cancel order</p>
+    <div id="messages"></div>
+    <input type="text" id="user-input" placeholder="Enter your option">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    function sendMessage() {
+      const input = document.getElementById('user-input').value;
+      document.getElementById('user-input').value = '';
+      socket.emit('user message', input);
+    }
+
+    socket.on('bot message', function(msg) {
+      const messages = document.getElementById('messages');
+      const message = document.createElement('p');
+      message.textContent = msg;
+      messages.appendChild(message);
+    });
+  </script>
+</body>
+</html>
