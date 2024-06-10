@@ -2,24 +2,31 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import chatbotRoute from "./routes/chatbot.route.js";
-import { startSession, handleInput } from "./services/chatbotService.js";
 import logger from "./logger/logger.js";
 import CONFIG from "./config/config.js";
 import connectToMongoDb from "./db/mongodb.js";
-
+import webSocket from "./integrations/websocket.js"
 
 const PORT = process.env.PORT || 3000;
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+import { join } from "path";
+import { fileURLToPath } from "url";
 
 // Connect to Mongodb Database
 connectToMongoDb();
 
+// Convert import.meta.url to a file path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = join(__filename, "..");
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("views"));
-app.use("/chat", chatbotRoute);
+app.use(express.static(join(__dirname, "views")));
+app.use("", chatbotRoute);
+
+webSocket(io);
 
 // catch all route
 app.all("*", (req, res) => {
@@ -35,22 +42,6 @@ app.use((err, req, res, next) => {
   const errorStatus = err.status || 500;
   res.status(errorStatus).send(err.message);
   next();
-});
-
-
-io.on("connection", (socket) => {
-  logger.info("a user connected");
-
-  socket.on("user message", async (msg) => {
-    const deviceId = socket.id;
-    await startSession(deviceId); // Ensure the session is started only once per connection
-    const response = await handleInput(deviceId, msg);
-    socket.emit("bot message", response);
-  });
-
-  socket.on("disconnect", () => {
-    logger.info("user disconnected");
-  });
 });
 
 

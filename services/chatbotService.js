@@ -2,7 +2,7 @@
 import Order from '../models/order.model.js';
 import MenuItem from '../models/MenuItem.model.js';
 
-async function startSession(deviceId) {
+const startSession = async (deviceId) => {
   let order = await Order.findOne({ deviceId });
   if (!order) {
     order = new Order({ deviceId });
@@ -11,7 +11,18 @@ async function startSession(deviceId) {
   return order;
 }
 
-async function handleInput(deviceId, input) {
+const displayMenu = async () =>  {
+  const menu = await MenuItem.find();
+  let response = 'Menu:\n';
+  let num = 0
+  menu.forEach(item => {
+    response += `${num+=1}. ${item.name} - $${item.price}\n`;
+  });
+  response += 'Select the item number to add to your order.';
+  return response;
+}
+
+const handleInput = async (deviceId, input) => {
   const order = await startSession(deviceId);
   let response = '';
 
@@ -25,14 +36,6 @@ async function handleInput(deviceId, input) {
   return response;
 }
 
-async function displayMenu() {
-  const menu = await MenuItem.find();
-  let response = 'Menu:\n';
-  menu.forEach(item => {
-    response += `${item._id}. ${item.name} - $${item.price}\n`;
-  });
-  response += 'Select the item number to add to your order.';
-  return response;
-}
+
 
 export { startSession, handleInput };
