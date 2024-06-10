@@ -1,6 +1,6 @@
 // services/chatbotService.js
-import Order from '../models/Order.js';
-import MenuItem from '../models/MenuItem.js';
+import Order from '../models/order.model.js';
+import MenuItem from '../models/MenuItem.model.js';
 
 async function startSession(deviceId) {
   let order = await Order.findOne({ deviceId });
