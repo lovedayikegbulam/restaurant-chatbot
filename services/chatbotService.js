@@ -1,41 +1,72 @@
-// services/chatbotService.js
-import Order from '../models/order.model.js';
-import MenuItem from '../models/MenuItem.model.js';
+import { Order } from '../models/orderModel.js';
 
-const startSession = async (deviceId) => {
-  let order = await Order.findOne({ deviceId });
-  if (!order) {
-    order = new Order({ deviceId });
-    await order.save();
-  }
-  return order;
-}
+export const getOptions = () => {
+  return `Select an option:\n
+  1. Place an order\n
+  99. Checkout order\n
+  98. See order history\n
+  97. See current order\n
+  0. Cancel order`;
+};
 
-const displayMenu = async () =>  {
-  const menu = await MenuItem.find();
-  let response = 'Menu:\n';
-  let num = 0
-  menu.forEach(item => {
-    response += `${num+=1}. ${item.name} - $${item.price}\n`;
-  });
-  response += 'Select the item number to add to your order.';
-  return response;
-}
 
-const handleInput = async (deviceId, input) => {
-  const order = await startSession(deviceId);
+export const getItems = () => {
+  return `Select an item:
+  1. Pizza
+  2. Burger
+  3. Pasta
+  4. Salad
+  0. Cancel`;
+};
+
+export const handleUserSelection = async (sessionId, selection) => {
   let response = '';
+  let order = await Order.findOne({ sessionId, status: 'pending' });
 
-  switch (input) {
+  switch (selection) {
     case '1':
-      response = await displayMenu();
+      response = getItems();
       break;
-    // Handle other input cases
+    case '99':
+      if (order && order.items.length > 0) {
+        order.status = 'placed';
+        await order.save();
+        response = 'Order placed. Select 1 to place a new order.';
+      } else {
+        response = 'No order to place. Select 1 to place an order.';
+      }
+      break;
+    case '98':
+      const orderHistory = await Order.find({ sessionId, status: 'placed' });
+      response = orderHistory.length > 0 ? `Order history: ${orderHistory.map(o => o.items).join(', ')}` : 'No order history.';
+      break;
+    case '97':
+      response = order ? `Current order: ${order.items.join(', ')}` : 'No current order.';
+      break;
+    case '0':
+      if (order) {
+        order.status = 'canceled';
+        await order.save();
+        response = 'Order canceled.';
+      } else {
+        response = 'No order to cancel.';
+      }
+      break;
+    default:
+      if (order) {
+        const items = ['Pizza', 'Burger', 'Pasta', 'Salad'];
+        const itemIndex = parseInt(selection, 10) - 1;
+        if (items[itemIndex]) {
+          order.items.push(items[itemIndex]);
+          await order.save();
+          response = `Added ${items[itemIndex]} to your order. Select more items or 99 to checkout.`;
+        } else {
+          response = 'Invalid selection.';
+        }
+      } else {
+        response = 'Invalid selection.';
+      }
   }
 
   return response;
-}
-
-
-
-export { startSession, handleInput };
+};

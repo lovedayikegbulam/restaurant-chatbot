@@ -1,39 +1,62 @@
-<!-- views/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Restaurant Chatbot</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant ChatBot</title>
 </head>
 <body>
-  <div id="chatbox">
-    <p>Welcome to Eatmore Restaurant!</p>
-    <p>Select an option to place an order:</p>
-    <p>Select 1 to Place an order</p>
-    <p>Select 99 to checkout order</p>
-    <p>Select 98 to see order history</p>
-    <p>Select 97 to see current order</p>
-    <p>Select 0 to cancel order</p>
-    <div id="messages"></div>
-    <input type="text" id="user-input" placeholder="Enter your option">
-    <button onclick="sendMessage()">Send</button>
-  </div>
+  <h1>Welcome To Eatmore Restaurant!</h1>
+  <div id="chat"></div>
+  <input type="text" id="messageInput" placeholder="Type your message">
+  <button id="sendButton">Send</button>
 
-  <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+    const sessionId = 'unique-session-id'; // This should be generated and stored per device/session
+    const chatDiv = document.getElementById('chat');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
 
-    function sendMessage() {
-      const input = document.getElementById('user-input').value;
-      document.getElementById('user-input').value = '';
-      socket.emit('user message', input);
-    }
+    const addMessageToChat = (message, isBot) => {
+      const messageElement = document.createElement('div');
+      // messageElement.innerHTML = message.replace(/\n/g, '<br>');
+      messageElement.textContent = message;
+      messageElement.style.color = isBot ? 'blue' : 'black';
+      chatDiv.appendChild(messageElement);
+    };
 
-    socket.on('bot message', function(msg) {
-      const messages = document.getElementById('messages');
-      const message = document.createElement('p');
-      message.textContent = msg;
-      messages.appendChild(message);
+    const fetchChatOptions = async () => {
+      const response = await fetch('/api/chatbot/options');
+      const data = await response.json();
+      addMessageToChat(data.response, true);
+    };
+
+    const sendMessage = async () => {
+      const message = messageInput.value;
+      if (message.trim()) {
+        addMessageToChat(message, false);
+
+        const response = await fetch('/api/chatbot/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, message })
+        });
+        
+        const data = await response.json();
+        addMessageToChat(data.response, true);
+
+        messageInput.value = '';
+      }
+    };
+
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
     });
+
+    fetchChatOptions();
   </script>
 </body>
 </html>
