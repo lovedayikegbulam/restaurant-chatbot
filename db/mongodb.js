@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import CONFIG from "../config/config.js";
-import logger from "../../logger/logger.js";
+import logger from "../logger/logger.js";
 
 const connectToMongoDb = async () => {
   const MONGODB_URI = CONFIG.MONGODB_URI;

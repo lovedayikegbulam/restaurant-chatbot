@@ -1,19 +1,25 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
-import chatbotRoutes from "./routes/chatbot.route.js";
+import chatbotRoute from "./routes/chatbot.route.js";
 import { startSession, handleInput } from "./services/chatbotService.js";
 import logger from "./logger/logger.js";
 import CONFIG from "./config/config.js";
+import connectToMongoDb from "./db/mongodb.js";
+
 
 const PORT = process.env.PORT || 3000;
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Connect to Mongodb Database
+connectToMongoDb();
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static("views"));
-app.use("/chat", chatbotRoutes);
+app.use("/chat", chatbotRoute);
 
 // catch all route
 app.all("*", (req, res) => {
@@ -31,6 +37,7 @@ app.use((err, req, res, next) => {
   next();
 });
 
+
 io.on("connection", (socket) => {
   logger.info("a user connected");
 
@@ -45,6 +52,7 @@ io.on("connection", (socket) => {
     logger.info("user disconnected");
   });
 });
+
 
 server.listen(PORT, () => {
   logger.info(`Server running at http://${CONFIG.LOCAL_HOST}:${PORT}/`);
