@@ -11,29 +11,6 @@ This project is a restaurant chatbot built with Node.js, Express, and MongoDB. I
 - Order management with persistent storage using MongoDB.
 - Session management to track orders based on user sessions.
 
-## Project Structure
-
-restaurant-chatbot/
-│
-├── config/
-│ └── config.js
-├── controllers/
-│ └── chatbotController.js
-├── models/
-│ └── orderModel.js
-├── routes/
-│ └── chatbotRoutes.js
-├── views/
-│ └── index.html
-├── middleware/
-│ └── sessionMiddleware.js
-├── utils/
-│ └── order.selection.js.js
-├── .env
-├── app.js
-├── package.json
-└── README.md
-
 
 ## Setup and Installation
 
