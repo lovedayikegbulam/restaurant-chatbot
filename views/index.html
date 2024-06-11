@@ -1,39 +1,72 @@
-<!-- views/index.html -->
 <!DOCTYPE html>
-<html>
-<head>
-  <title>Restaurant Chatbot</title>
-</head>
-<body>
-  <div id="chatbox">
-    <p>Welcome to the Restaurant Chatbot!</p>
-    <p>Select an option:</p>
-    <p>1. Place an order</p>
-    <p>99. Checkout order</p>
-    <p>98. See order history</p>
-    <p>97. See current order</p>
-    <p>0. Cancel order</p>
-    <div id="messages"></div>
-    <input type="text" id="user-input" placeholder="Enter your option">
-    <button onclick="sendMessage()">Send</button>
-  </div>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restaurant ChatBot</title>
+  </head>
+  <body>
+    <h1>Welcome To Eatmore Restaurant!</h1>
+    <div id="chat"></div>
+    <input type="text" id="messageInput" placeholder="Type your message" />
+    <button id="sendButton">Send</button>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
+    <script>
+      const chatDiv = document.getElementById("chat");
+      const messageInput = document.getElementById("messageInput");
+      const sendButton = document.getElementById("sendButton");
 
-    function sendMessage() {
-      const input = document.getElementById('user-input').value;
-      document.getElementById('user-input').value = '';
-      socket.emit('user message', input);
-    }
+      const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(";").shift();
+      };
 
-    socket.on('bot message', function(msg) {
-      const messages = document.getElementById('messages');
-      const message = document.createElement('p');
-      message.textContent = msg;
-      messages.appendChild(message);
-    });
-  </script>
-</body>
+      const sessionId = getCookie("sessionId"); // Fetch sessionId from cookies
+
+      // Debugging log to check the cookies
+      // console.log("Cookies:", document.cookie);
+
+      const addMessageToChat = (message, isBot) => {
+        const messageElement = document.createElement("div");
+        // messageElement.innerHTML = message.replace(/\n/g, '<br>');
+        messageElement.textContent = message;
+        messageElement.style.color = isBot ? "blue" : "black";
+        chatDiv.appendChild(messageElement);
+      };
+
+      const fetchChatOptions = async () => {
+        const response = await fetch("/api/chatbot/options");
+        const data = await response.json();
+        addMessageToChat(data.response, true);
+      };
+
+      const sendMessage = async () => {
+        const message = messageInput.value;
+        if (message.trim()) {
+          addMessageToChat(message, false);
+
+          const response = await fetch("/api/chatbot/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId, message }),
+          });
+
+          const data = await response.json();
+          addMessageToChat(data.response, true);
+
+          messageInput.value = "";
+        }
+      };
+
+      sendButton.addEventListener("click", sendMessage);
+      messageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      });
+
+      fetchChatOptions();
+    </script>
+  </body>
 </html>

@@ -1,33 +1,32 @@
-import express from 'express';
-import http from 'http';
-import { Server } from 'socket.io';
-import chatbotRoutes from './routes/chatbot.route.js';
-import { startSession, handleInput } from './services/chatbotService.js';
+import express from "express";
+import { join } from "path";
+import { fileURLToPath } from "url";
+import chatbotRoutes from "./routes/chatbot.route.js";
+import connectToMongoDb from "./db/mongodb.js";
+import CONFIG from "./config/config.js";
+import cookieParser from "cookie-parser";
+import generateSessionId from "./middlewares/session.middleware.js";
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const port = CONFIG.PORT || 3000;
 
+// Connect to MongoDB
+connectToMongoDb();
+
+// Middlewares
 app.use(express.json());
-app.use(express.static('views'));
-app.use('/chat', chatbotRoutes);
+app.use(cookieParser());
+app.use(generateSessionId);
 
-io.on('connection', (socket) => {
-    logger.info('a user connected');
+// Set up routes
+app.use("/api/chatbot", chatbotRoutes);
 
-  socket.on('user message', async (msg) => {
-    const deviceId = socket.id;
-    await startSession(deviceId); // Ensure the session is started only once per connection
-    const response = await handleInput(deviceId, msg);
-    socket.emit('bot message', response);
-  });
+// Serve static files
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = join(__filename, "..");
+app.use(express.static(join(__dirname, "views")));
 
-  socket.on('disconnect', () => {
-    logger.info('user disconnected');
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`);
+// Start server
+app.listen(port, () => {
+  console.log(`Server running at http://${CONFIG.LOCAL_HOST}:${port}/`);
 });
