@@ -5,7 +5,7 @@ import chatbotRoutes from "./routes/chatbot.route.js";
 import connectToMongoDb from "./db/mongodb.js";
 import CONFIG from "./config/config.js";
 import cookieParser from "cookie-parser";
-import generateSessionId from "./middlewares/sessionId.js";
+import generateSessionId from "./middlewares/session.middleware.js";
 
 const app = express();
 const port = CONFIG.PORT || 3000;
@@ -16,7 +16,7 @@ connectToMongoDb();
 // Middlewares
 app.use(express.json());
 app.use(cookieParser());
-app.use(generateSessionId())
+app.use(generateSessionId);
 
 // Set up routes
 app.use("/api/chatbot", chatbotRoutes);
