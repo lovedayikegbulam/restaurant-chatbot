@@ -1,79 +1,78 @@
-import { Order } from '../models/orderModel.js';
+import {Order} from '../models/orderModel.js';
+import {getItems, getItemsInvalidSelection, getOptionsInvalidSelection, mainMenu} from "../utils/order.selection.js"
 
-// Function to display options
-export const getOptions = () => {
-  return `Select an option:\n
-  90. Place an order\n
-  99. Checkout order\n
-  98. See order history\n
-  97. See current order\n
-  0. Cancel order`;
-};
 
-// Function to display items
-export const getItems = () => {
-  return `Select an item:
-  1. Pizza
-  2. Burger
-  3. Pasta
-  4. Salad
-  0. Cancel`;
-};
-
-// Function to handle user selection
 export const handleUserSelection = async (sessionId, selection) => {
   let response = '';
 
-  // Fetch the current pending order or create a new one if not exists
+  // Fetch the current pending order
   let order = await Order.findOne({ sessionId, status: 'pending' });
-  if (!order && selection === '1') {
-    order = new Order({ sessionId, items: [], status: 'pending' });
-    await order.save();
-  }
 
-  switch (selection) {
-    case '90':
+  // Handle the case where the order is not found
+  if (!order) {
+    if (selection === '1') {
+      order = new Order({ sessionId, items: [], status: 'pending', isPlacingOrder: true });
+      await order.save();
       response = getItems();
-      break;
-    case '99':
-      if (order && order.items.length > 0) {
-        order.status = 'placed';
-        await order.save();
-        response = 'Order placed. Select 1 to place a new order.';
-      } else {
-        response = 'No order to place. Select 1 to place an order.';
+    } else {
+      switch (selection) {
+        case '99':
+          response = `No order to place, ${mainMenu()}`;
+          break;
+        case '98':
+          const orderHistory = await Order.find({ sessionId, status: 'placed' });
+          response = orderHistory.length > 0 ? `Order history: ${orderHistory.map(o => o.items.join(', ')).join('; ')}` : 'No order history.';
+          break;
+        case '97':
+          response = `No current order, ${mainMenu()}`;
+          break;
+        case '0':
+          response = `No order to cancel, ${mainMenu()}`;
+          break;
+        default:
+          response = getOptionsInvalidSelection();
       }
-      break;
-    case '98':
-      const orderHistory = await Order.find({ sessionId, status: 'placed' });
-      response = orderHistory.length > 0 ? `Order history: ${orderHistory.map(o => o.items.join(', ')).join('; ')}` : 'No order history.';
-      break;
-    case '97':
-      response = order ? `Current order: ${order.items.join(', ')}` : 'No current order.';
-      break;
-    case '0':
-      if (order) {
-        order.status = 'canceled';
-        await order.save();
-        response = 'Order canceled.';
-      } else {
-        response = 'No order to cancel.';
-      }
-      break;
-    default:
-      if (order) {
-        const items = ['Pizza', 'Burger', 'Pasta', 'Salad'];
-        const itemIndex = parseInt(selection, 10) - 1;
-        if (items[itemIndex]) {
-          order.items.push(items[itemIndex]);
+    }
+  } else {
+    switch (selection) {
+      case '99':
+        if (order.items.length > 0) {
+          order.status = 'placed';
+          order.isPlacingOrder = false;
           await order.save();
-          response = `Added ${items[itemIndex]} to your order. Select more items or 99 to checkout.`;
+          response = `Order placed, ${mainMenu()}`;
         } else {
-          response = 'Invalid selection.';
+          response = `No order to place, ${mainMenu()}`;
         }
-      } else {
-        response = 'Invalid selection.';
-      }
+        break;
+      case '98':
+        const orderHistory = await Order.find({ sessionId, status: 'placed' });
+        response = orderHistory.length > 0 ? `Order history: ${orderHistory.map(o => o.items.join(', ')).join('; ')}` : `No order history, ${mainMenu()}`;
+        break;
+      case '97':
+        response = `Current order: ${order.items.join(', ')}`;
+        break;
+      case '0':
+        order.status = 'canceled';
+        order.isPlacingOrder = false;
+        await order.save();
+        response = `Order canceled, ${mainMenu()}`;
+        break;
+      default:
+        if (order.isPlacingOrder) {
+          const items = ['Pizza', 'Burger', 'Pasta', 'Salad'];
+          const itemIndex = parseInt(selection, 10) - 2; // Adjust index to match new item numbers
+          if (items[itemIndex]) {
+            order.items.push(items[itemIndex]);
+            await order.save();
+            response = `Added ${items[itemIndex]} to your order. Select more items or 99 to checkout.`;
+          } else {
+            response = getItemsInvalidSelection();
+          }
+        } else {
+          response = getItemsInvalidSelection();
+        }
+    }
   }
 
   return response;

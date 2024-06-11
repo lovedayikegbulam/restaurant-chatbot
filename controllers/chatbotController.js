@@ -1,4 +1,5 @@
-import { getOptions, handleUserSelection } from "../services/chatbotService.js";
+import { handleUserSelection } from "../services/chatbotService.js";
+import { getOptions } from "../utils/order.selection.js";
 
 export const chat = async (req, res) => {
   const { sessionId, message } = req.body;
